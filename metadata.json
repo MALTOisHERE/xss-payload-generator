@@ -1,0 +1,5 @@
+{
+  "name": "XSS Payload Generator",
+  "description": "A powerful and versatile tool for security researchers and developers to generate customized Cross-Site Scripting (XSS) payloads. Select from various payload types like general XSS, keyloggers, or cookie stealers, and configure contexts, allowed characters, and more to create effective test cases.",
+  "requestFramePermissions": []
+}
