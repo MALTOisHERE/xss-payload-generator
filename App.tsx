@@ -15,7 +15,7 @@ const App: React.FC = () => {
     allowedChars: ['>', '<', "'", '"', '/'],
     tags: ['script', 'img', 'svg', 'a', 'iframe'],
     attributes: ['onload', 'onerror', 'onclick', 'onmouseover', 'src', 'href'],
-    attackerHost: 'your-attacker-domain.com',
+    attackerHost: 'your-listener.com',
   });
   const [payloads, setPayloads] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -111,22 +111,39 @@ const App: React.FC = () => {
         </>
       );
     }
-    if (options.payloadType === PayloadType.Keylogger || options.payloadType === PayloadType.CookieTheft) {
-      return (
-        <div>
-          <label htmlFor="attackerHost" className="block text-sm font-medium text-gray-400 mb-2">Attacker Host URL</label>
-          <input
-            id="attackerHost"
-            type="text"
-            value={options.attackerHost}
-            onChange={(e) => setOptions(prev => ({ ...prev, attackerHost: e.target.value }))}
-            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="attacker.com"
-          />
-        </div>
-      );
-    }
-    return null;
+    
+    // FIX: The `if (options.payloadType !== PayloadType.General)` check was redundant.
+    // The previous `if` block handles the `General` case and returns.
+    // If we reach this point, `options.payloadType` is guaranteed not to be `General`.
+    const isRedirection = options.payloadType === PayloadType.Redirection;
+    
+    const label = isRedirection 
+      ? "Redirection Host URL" 
+      : "Attacker Host URL (for data exfiltration)";
+      
+    const placeholder = isRedirection
+      ? "malicious-site.com"
+      : "your-listener.com";
+      
+    return (
+      <div>
+        <label htmlFor="attackerHost" className="block text-sm font-medium text-gray-400 mb-2">{label}</label>
+        <input
+          id="attackerHost"
+          type="text"
+          value={options.attackerHost}
+          onChange={(e) => setOptions(prev => ({ ...prev, attackerHost: e.target.value }))}
+          className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          placeholder={placeholder}
+        />
+         <p className="text-xs text-gray-500 mt-2">
+          {isRedirection 
+            ? "The target host where the user will be redirected."
+            : "The host that will receive the stolen data. Do not include https://."
+          }
+        </p>
+      </div>
+    );
   };
   
   return (
@@ -141,12 +158,12 @@ const App: React.FC = () => {
             <div className="space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">Payload Type</label>
-                <div className="flex bg-gray-800 rounded-md p-1">
+                <div className="flex flex-wrap bg-gray-800 rounded-md p-1 gap-1">
                   {Object.values(PayloadType).map(type => (
                     <button
                       key={type}
                       onClick={() => setOptions(prev => ({ ...prev, payloadType: type }))}
-                      className={`w-full py-2 text-sm font-semibold rounded-md transition-colors duration-200 ${
+                      className={`flex-grow basis-1/3 py-2 px-1 text-sm font-semibold rounded-md transition-colors duration-200 ${
                         options.payloadType === type
                           ? 'bg-blue-600 text-white'
                           : 'text-gray-300 hover:bg-gray-700'

